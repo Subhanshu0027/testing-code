@@ -1,65 +1,70 @@
-name: List Directories on Branch Commit
+name: Deploy Matching Commit Message Label PRs
 
 on:
   push:
     branches:
-      - qa
-      - qa-fr
       - release/*  # Triggers on any push to branches starting with 'release/'
-
+      
 jobs:
-  list_directories:
+  trigger_qa_deployments:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Get the latest commit message
-      id: get-commit-message
-      run: |
-        COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-        echo "Commit message: $COMMIT_MESSAGE"
-        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
-
-    - name: Extract the label from commit message
-      id: extract-label
-      run: |
-        # Extract the label from the commit message (assuming format: 'label=YOUR_LABEL')
-        LABEL_FROM_COMMIT=$(echo "${{ env.COMMIT_MESSAGE }}" | grep -oP '(?<=label=)\d+')
-        echo "Extracted label from commit message: $LABEL_FROM_COMMIT"
-        echo "LABEL_FROM_COMMIT=$LABEL_FROM_COMMIT" >> $GITHUB_ENV
-
     - name: Read Deployment Label
       id: read-label
       run: |
-        # Check if deployment-config.txt exists
-        if [ -f deployment-config.txt ]; then
-          # Read the label from deployment-config.txt
-          LABEL=$(grep 'label=' deployment-config.txt | cut -d'=' -f2)
-          echo "Label found: $LABEL"
-          echo "LABEL=$LABEL" >> $GITHUB_ENV
-        else
-          echo "deployment-config.txt not found."
+        # Read the label from deployment-config.txt
+        LABEL=$(grep 'label=' deployment-config.txt | cut -d'=' -f2)
+        echo "Label found: $LABEL"
+        echo "LABEL=$LABEL" >> $GITHUB_ENV
+
+    - name: Install GitHub CLI
+      run: |
+        sudo apt-get install -y gh
+
+    - name: Deploy PRs with Matching Commit Message Label
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        LABEL: ${{ env.LABEL }}
+      run: |
+        # Fetch all open PRs
+        PRS=$(gh pr list --state open --json number --jq '.[].number')
+
+        # Initialize flag to track unapproved PRs
+        ALL_APPROVED=true
+
+        # Loop through each PR
+        for PR in $PRS; do
+          echo "Checking PR #$PR"
+
+          # Fetch the commit messages for the PR and check for the LABEL in any of the commit messages
+          MATCHING_COMMIT=$(gh pr view $PR --json commits --jq ".commits | map(select(.commit.message | contains(\"$LABEL\"))) | length")
+
+          if [ "$MATCHING_COMMIT" -eq 0 ]; then
+            echo "No matching commit message label found in PR #$PR. Skipping deployment."
+            continue
+          fi
+
+          # Check if the PR is approved
+          APPROVAL_COUNT=$(gh pr view $PR --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
+
+          if [ "$APPROVAL_COUNT" -eq 0 ]; then
+            echo "PR #$PR is not approved."
+            ALL_APPROVED=false
+          else:
+            echo "PR #$PR has matching commit message label and is approved. Triggering downstream deployments..."
+
+            # Trigger workflows in the qa and qa-fr branches
+            gh workflow run deploy-qa.yml --ref qa
+            gh workflow run deploy-qa-fr.yml --ref qa-fr
+          fi
+        done
+
+        # Fail the workflow if any PRs were not approved
+        if [ "$ALL_APPROVED" = false ]; then
+          echo "Some PRs were not approved. Failing the workflow."
           exit 1
         fi
-
-    - name: Compare Labels and List Directories
-      run: |
-        echo "Comparing labels..."
-        echo "Commit Label: ${LABEL_FROM_COMMIT}"
-        echo "Deployment Config Label: ${LABEL}"
-        if [ "${LABEL_FROM_COMMIT}" == "${LABEL#sc-}" ]; then
-          echo "Labels match. Listing all directories..."
-          find . -type d
-        else
-          echo "Labels do not match. No directories will be listed."
-        fi
-
-    - name: Trigger Workflow for `qa-fr`
-      if: ${{ github.ref == 'refs/heads/qa' }}
-      run: |
-        curl -X POST https://api.github.com/repos/${{ github.repository }}/actions/workflows/main.yaml/dispatches \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.CUSTOM_PAT }}" \
-          -d '{"ref":"qa-fr"}'
