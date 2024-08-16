@@ -59,8 +59,7 @@ jobs:
     - name: Trigger Workflow for `qa-fr`
       if: ${{ github.ref == 'refs/heads/qa' }}
       run: |
-        # Use GitHub API to dispatch a workflow run on `qa-fr` branch
         curl -X POST https://api.github.com/repos/${{ github.repository }}/actions/workflows/your-workflow.yml/dispatches \
           -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Authorization: token ${{ secrets.CUSTOM_PAT }}" \
           -d '{"ref":"qa-fr"}'
