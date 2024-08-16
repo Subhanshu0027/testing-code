@@ -15,32 +15,45 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Read Deployment Label
-      id: read-label
+    - name: Get Deployment Label from Config
+      id: get-label
       run: |
         # Check if deployment-config.txt exists
         if [ -f deployment-config.txt ]; then
           # Read the label from deployment-config.txt
           LABEL=$(grep 'label=' deployment-config.txt | cut -d'=' -f2)
-          echo "Label found: $LABEL"
-          echo "LABEL=$LABEL" >> $GITHUB_ENV
+          echo "Label found in deployment-config.txt: $LABEL"
+          echo "DEPLOYMENT_LABEL=$LABEL" >> $GITHUB_ENV
         else
           echo "deployment-config.txt not found."
           exit 1
         fi
 
-    - name: List All Directories
-      env:
-        LABEL: ${{ env.LABEL }}
+    - name: Get Commit Message
+      id: get-commit-message
       run: |
-        echo "Checking if label matches the required label..."
-        # Define the required label here
-        REQUIRED_LABEL="sc-20334"
-        
-        if [ "$LABEL" == "$REQUIRED_LABEL" ]; then
-          echo "Label matches. Listing all directories..."
+        # Get the latest commit message
+        COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
+        echo "Commit message: $COMMIT_MESSAGE"
+        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
+
+    - name: Extract Label from Commit Message
+      id: extract-label
+      run: |
+        # Extract the label from the commit message (assuming format: 'label=YOUR_LABEL')
+        EXTRACTED_LABEL=$(echo "${{ env.COMMIT_MESSAGE }}" | grep -oP '(?<=label=)\S+')
+        echo "Extracted label from commit message: $EXTRACTED_LABEL"
+        echo "EXTRACTED_LABEL=$EXTRACTED_LABEL" >> $GITHUB_ENV
+
+    - name: List All Directories if Labels Match
+      env:
+        DEPLOYMENT_LABEL: ${{ env.DEPLOYMENT_LABEL }}
+        EXTRACTED_LABEL: ${{ env.EXTRACTED_LABEL }}
+      run: |
+        echo "Comparing labels..."
+        if [ "$DEPLOYMENT_LABEL" == "$EXTRACTED_LABEL" ]; then
+          echo "Labels match. Listing all directories..."
           find . -type d
         else
-          echo "Label does not match. No directories will be listed."
+          echo "Labels do not match. No directories will be listed."
         fi
-
