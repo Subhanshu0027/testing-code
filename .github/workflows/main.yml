@@ -18,10 +18,16 @@ jobs:
     - name: Read Deployment Label
       id: read-label
       run: |
-        # Read the label from deployment-config.txt
-        LABEL=$(grep 'label=' deployment-config.txt | cut -d'=' -f2)
-        echo "Label found: $LABEL"
-        echo "LABEL=$LABEL" >> $GITHUB_ENV
+        # Check if deployment-config.txt exists
+        if [ -f deployment-config.txt ]; then
+          # Read the label from deployment-config.txt
+          LABEL=$(grep 'label=' deployment-config.txt | cut -d'=' -f2)
+          echo "Label found: $LABEL"
+          echo "LABEL=$LABEL" >> $GITHUB_ENV
+        else
+          echo "deployment-config.txt not found."
+          exit 1
+        fi
 
     - name: List All Directories
       env:
