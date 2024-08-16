@@ -55,3 +55,18 @@ jobs:
         else
           echo "Labels do not match. No directories will be listed."
         fi
+
+    - name: Check if Trigger Needed for Other Branch
+      if: ${{ github.ref == 'refs/heads/qa' }}
+      run: |
+        # Check for changes in `qa-fr` if currently on `qa` branch
+        echo "Checking `qa-fr` branch for triggers..."
+        git fetch origin qa-fr
+        # Check if there are any new commits in `qa-fr`
+        NEW_COMMITS=$(git log origin/qa-fr --not HEAD)
+        if [ -n "$NEW_COMMITS" ]; then
+          echo "There are new commits in `qa-fr`. Triggering workflow for `qa-fr`."
+          # You could add a call to the GitHub API to trigger another workflow here if needed
+        else
+          echo "No new commits in `qa-fr`. No action needed."
+        fi
