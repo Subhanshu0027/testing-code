@@ -1,8 +1,7 @@
-# .github/workflows/qa.yml
-name: Deploy to QA
+name: Deploy to QA-FR
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # This allows the workflow to be triggered manually via API
 
 jobs:
   deploy:
@@ -12,8 +11,8 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Deploy to QA
+    - name: Deploy to QA-FR
       run: |
-        echo "Deploying to QA environment..."
-        # Add deployment commands here
+        echo "Deploying to QA-FR environment..."
+        # Add your deployment commands here
         ls -la
