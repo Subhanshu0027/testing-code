@@ -6,6 +6,7 @@ on:
       - qa
       - qa-fr
       - release/*  # Triggers on any push to branches starting with 'release/'
+  workflow_dispatch:  # Allows manual triggering via the GitHub API
 
 jobs:
   list_directories:
@@ -55,11 +56,3 @@ jobs:
         else
           echo "Labels do not match. No directories will be listed."
         fi
-
-    - name: Trigger Workflow for `qa-fr`
-      if: ${{ github.ref == 'refs/heads/qa' }}
-      run: |
-        curl -X POST https://api.github.com/repos/${{ github.repository }}/actions/workflows/main.yaml/dispatches \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.CUSTOM_PAT }}" \
-          -d '{"ref":"qa-fr"}'
