@@ -1,7 +1,8 @@
-name: Deploy to QA-fr
+# .github/workflows/qa-fr.yml
+name: Deploy to QA-FR
 
 on:
-  workflow_dispatch:  # This triggers when the release branch triggers it
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -11,8 +12,8 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Deploy to QA-fr
+    - name: Deploy to QA-FR
       run: |
         echo "Deploying to QA-FR environment..."
-        # Add your deployment commands here
+        # Add deployment commands here
         ls -la
