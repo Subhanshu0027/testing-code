@@ -15,43 +15,41 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Get Deployment Label from Config
-      id: get-label
+    - name: Get the latest commit message
+      id: get-commit-message
+      run: |
+        COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+        echo "Commit message: $COMMIT_MESSAGE"
+        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
+
+    - name: Extract the label from commit message
+      id: extract-label
+      run: |
+        # Extract the label from the commit message (assuming format: 'label=YOUR_LABEL')
+        LABEL_FROM_COMMIT=$(echo "${{ env.COMMIT_MESSAGE }}" | grep -oP '(?<=label=)\d+')
+        echo "Extracted label from commit message: $LABEL_FROM_COMMIT"
+        echo "LABEL_FROM_COMMIT=$LABEL_FROM_COMMIT" >> $GITHUB_ENV
+
+    - name: Read Deployment Label
+      id: read-label
       run: |
         # Check if deployment-config.txt exists
         if [ -f deployment-config.txt ]; then
           # Read the label from deployment-config.txt
           LABEL=$(grep 'label=' deployment-config.txt | cut -d'=' -f2)
-          echo "Label found in deployment-config.txt: $LABEL"
-          echo "DEPLOYMENT_LABEL=$LABEL" >> $GITHUB_ENV
+          echo "Label found: $LABEL"
+          echo "LABEL=$LABEL" >> $GITHUB_ENV
         else
           echo "deployment-config.txt not found."
           exit 1
         fi
 
-    - name: Get Commit Message
-      id: get-commit-message
-      run: |
-        # Get the latest commit message
-        COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
-        echo "Commit message: $COMMIT_MESSAGE"
-        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
-
-    - name: Extract Label from Commit Message
-      id: extract-label
-      run: |
-        # Extract the label from the commit message (assuming format: 'label=YOUR_LABEL')
-        EXTRACTED_LABEL=$(echo "${{ env.COMMIT_MESSAGE }}" | grep -oP '(?<=label=)\S+')
-        echo "Extracted label from commit message: $EXTRACTED_LABEL"
-        echo "EXTRACTED_LABEL=$EXTRACTED_LABEL" >> $GITHUB_ENV
-
-    - name: List All Directories if Labels Match
-      env:
-        DEPLOYMENT_LABEL: ${{ env.DEPLOYMENT_LABEL }}
-        EXTRACTED_LABEL: ${{ env.EXTRACTED_LABEL }}
+    - name: Compare Labels and List Directories
       run: |
         echo "Comparing labels..."
-        if [ "$DEPLOYMENT_LABEL" == "$EXTRACTED_LABEL" ]; then
+        echo "Commit Label: ${{ env.LABEL_FROM_COMMIT }}"
+        echo "Deployment Config Label: ${{ env.LABEL }}"
+        if [ "${{ env.LABEL_FROM_COMMIT }}" == "${{ env.LABEL }}" ]; then
           echo "Labels match. Listing all directories..."
           find . -type d
         else
