@@ -47,9 +47,9 @@ jobs:
     - name: Compare Labels and List Directories
       run: |
         echo "Comparing labels..."
-        echo "Commit Label: ${{ env.LABEL_FROM_COMMIT }}"
-        echo "Deployment Config Label: ${{ env.LABEL }}"
-        if [ "${{ env.LABEL_FROM_COMMIT }}" == "${{ env.LABEL }}" ]; then
+        echo "Commit Label: ${LABEL_FROM_COMMIT}"
+        echo "Deployment Config Label: ${LABEL}"
+        if [ "${LABEL_FROM_COMMIT}" == "${LABEL#sc-}" ]; then
           echo "Labels match. Listing all directories..."
           find . -type d
         else
