@@ -34,7 +34,10 @@ jobs:
         LABEL: ${{ env.LABEL }}
       run: |
         echo "Checking if label matches the required label..."
-        if [ "$LABEL" == "sc-20334" ]; then
+        # Define the required label here
+        REQUIRED_LABEL="sc-20334"
+        
+        if [ "$LABEL" == "$REQUIRED_LABEL" ]; then
           echo "Label matches. Listing all directories..."
           find . -type d
         else
