@@ -1,65 +1,18 @@
-name: List Directories on Branch Commit
+name: Deploy to QA
 
 on:
-  push:
-    branches:
-      - qa
-      - qa-fr
-      - release/*  # Triggers on any push to branches starting with 'release/'
+  workflow_dispatch:  # This triggers when the release branch triggers it
 
 jobs:
-  list_directories:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Get the latest commit message
-      id: get-commit-message
+    - name: Deploy to QA-FR
       run: |
-        COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-        echo "Commit message: $COMMIT_MESSAGE"
-        echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
-
-    - name: Extract the label from commit message
-      id: extract-label
-      run: |
-        # Extract the label from the commit message (assuming format: 'label=YOUR_LABEL')
-        LABEL_FROM_COMMIT=$(echo "${{ env.COMMIT_MESSAGE }}" | grep -oP '(?<=label=)\d+')
-        echo "Extracted label from commit message: $LABEL_FROM_COMMIT"
-        echo "LABEL_FROM_COMMIT=$LABEL_FROM_COMMIT" >> $GITHUB_ENV
-
-    - name: Read Deployment Label
-      id: read-label
-      run: |
-        # Check if deployment-config.txt exists
-        if [ -f deployment-config.txt ]; then
-          # Read the label from deployment-config.txt
-          LABEL=$(grep 'label=' deployment-config.txt | cut -d'=' -f2)
-          echo "Label found: $LABEL"
-          echo "LABEL=$LABEL" >> $GITHUB_ENV
-        else
-          echo "deployment-config.txt not found."
-          exit 1
-        fi
-
-    - name: Compare Labels and List Directories
-      run: |
-        echo "Comparing labels..."
-        echo "Commit Label: ${LABEL_FROM_COMMIT}"
-        echo "Deployment Config Label: ${LABEL}"
-        if [ "${LABEL_FROM_COMMIT}" == "${LABEL#sc-}" ]; then
-          echo "Labels match. Listing all directories..."
-          find . -type d
-        else
-          echo "Labels do not match. No directories will be listed."
-        fi
-
-    - name: Trigger Workflow for `qa-fr`
-      if: ${{ github.ref == 'refs/heads/qa' }}
-      run: |
-        curl -X POST https://api.github.com/repos/${{ github.repository }}/actions/workflows/main.yaml/dispatches \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.CUSTOM_PAT }}" \
-          -d '{"ref":"qa-fr"}'
+        echo "Deploying to QA-FR environment..."
+        # Add your deployment commands here
+        ls -la
