@@ -1,2 +1,2 @@
-label=qa-deploy
+label=sc-20334
 
