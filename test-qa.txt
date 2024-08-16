@@ -1,2 +1,3 @@
 is a test file for the QA branc
 second line
+third line
