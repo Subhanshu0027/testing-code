@@ -1,0 +1,36 @@
+name: List Directories on Branch Commit
+
+on:
+  push:
+    branches:
+      - qa
+      - qa-fr
+      - release/*  # Triggers on any push to branches starting with 'release/'
+
+jobs:
+  list_directories:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Read Deployment Label
+      id: read-label
+      run: |
+        # Read the label from deployment-config.txt
+        LABEL=$(grep 'label=' deployment-config.txt | cut -d'=' -f2)
+        echo "Label found: $LABEL"
+        echo "LABEL=$LABEL" >> $GITHUB_ENV
+
+    - name: List All Directories
+      env:
+        LABEL: ${{ env.LABEL }}
+      run: |
+        echo "Checking if label matches the required label..."
+        if [ "$LABEL" == "sc-20334" ]; then
+          echo "Label matches. Listing all directories..."
+          find . -type d
+        else
+          echo "Label does not match. No directories will be listed."
+        fi
